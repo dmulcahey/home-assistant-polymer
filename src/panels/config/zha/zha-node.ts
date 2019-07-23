@@ -26,6 +26,7 @@ import { haStyle } from "../../../resources/styles";
 import { HomeAssistant } from "../../../types";
 import { sortZHADevices } from "./functions";
 import { ItemSelectedEvent, ZHADeviceRemovedEvent } from "./types";
+import { UnsubscribeFunc, HassEvent } from "home-assistant-js-websocket";
 
 declare global {
   // for fire event
@@ -44,10 +45,38 @@ export class ZHANode extends LitElement {
   @property() private _selectedDeviceIndex: number = -1;
   @property() private _selectedDevice?: ZHADevice;
   @property() private _nodes: ZHADevice[] = [];
+  private _unsubDevices?: UnsubscribeFunc;
 
   public connectedCallback(): void {
     super.connectedCallback();
     this._fetchDevices();
+    this.hass!.connection.subscribeEvents((event: HassEvent) => {
+      if (
+        this._selectedDevice &&
+        this._selectedDevice.device_reg_id === event.data.device_id
+      ) {
+        this._fetchDevices().then(() => {
+          this._selectedDevice = this._nodes[this._selectedDeviceIndex];
+          this.shadowRoot.children[0]
+            .querySelector(
+              'ha-card div[class="node-picker"] paper-dropdown-menu'
+            )
+            .shadowRoot.querySelector(
+              'paper-menu-button div[class="dropdown-trigger"] paper-input'
+            )
+            .shadowRoot.querySelector("iron-input input").value = this
+            ._selectedDevice.user_given_name
+            ? this._selectedDevice.user_given_name
+            : this._selectedDevice.name;
+        });
+      }
+    }, "device_registry_updated").then((unsub) => (this._unsubDevices = unsub));
+  }
+
+  public disconnectedCallback() {
+    if (this._unsubDevices) {
+      this._unsubDevices();
+    }
   }
 
   protected render(): TemplateResult | void {
