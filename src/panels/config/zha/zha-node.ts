@@ -120,7 +120,8 @@ export class ZHANode extends LitElement {
                   .device=${this._selectedDevice}
                   .narrow=${!this.isWide}
                   .showHelp=${this._showHelp}
-                  showActions
+                  .showName=${false}
+                  .showModelInfo=${false}
                   @zha-device-removed=${this._onDeviceRemoved}
                 ></zha-device-card>
               `

@@ -126,6 +126,8 @@ export class ZHAGroupPage extends LitElement {
                     .hass=${this.hass}
                     .device=${member}
                     .narrow=${this.narrow}
+                    .showActions=${false}
+                    .showEditableInfo=${false}
                   ></zha-device-card>
                 `
               )
