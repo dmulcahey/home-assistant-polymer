@@ -36,6 +36,7 @@ import { ZHAClusterSelectedParams, ZHADeviceSelectedParams } from "./types";
 export class ZHADevicesPage extends LitElement {
   @property() public hass?: HomeAssistant;
   @property() public isWide?: boolean;
+  @property() public narrow?: boolean;
   @property() private _selectedDevice?: ZHADevice;
   @property() private _selectedCluster?: Cluster;
   @property() private _bindableDevices: ZHADevice[] = [];
@@ -116,6 +117,7 @@ export class ZHADevicesPage extends LitElement {
           ? html`
               <zha-group-binding-control
                 .isWide="${this.isWide}"
+                .narrow="${this.narrow}"
                 .hass="${this.hass}"
                 .selectedDevice="${this._selectedDevice}"
                 .groups="${this._groups}"
