@@ -245,7 +245,8 @@ export class ZHAGroupBindingControl extends LitElement {
       this._groupToBind &&
         this._clustersToBind &&
         this._clustersToBind?.length > 0 &&
-        this.selectedDevice
+        this.selectedDevice &&
+        this.selectedDevice.available
     );
   }
 

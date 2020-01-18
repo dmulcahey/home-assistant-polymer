@@ -275,7 +275,10 @@ class ZHADeviceCard extends LitElement {
           this.showActions
             ? html`
                 <div class="card-actions">
-                  <mwc-button @click="${this._onReconfigureNodeClick}">
+                  <mwc-button
+                    .disabled="${!this.device?.available}"
+                    @click="${this._onReconfigureNodeClick}"
+                  >
                     ${this.hass!.localize(
                       "ui.dialogs.zha_device_info.buttons.reconfigure"
                     )}
@@ -314,7 +317,10 @@ class ZHADeviceCard extends LitElement {
                     : ""}
                   ${this.device!.power_source === "Mains"
                     ? html`
-                        <mwc-button @click=${this._onAddDevicesClick}>
+                        <mwc-button
+                          .disabled="${!this.device?.available}"
+                          @click=${this._onAddDevicesClick}
+                        >
                           ${this.hass!.localize(
                             "ui.panel.config.zha.common.add_devices"
                           )}

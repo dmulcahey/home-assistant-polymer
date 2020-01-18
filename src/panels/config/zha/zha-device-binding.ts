@@ -85,7 +85,11 @@ export class ZHADeviceBindingControl extends LitElement {
           <div class="card-actions">
             <mwc-button
               @click="${this._onBindDevicesClick}"
-              .disabled="${!(this._deviceToBind && this.selectedDevice)}"
+              .disabled="${!(
+                this._deviceToBind &&
+                this.selectedDevice &&
+                this.selectedDevice.available
+              )}"
               >Bind</mwc-button
             >
             ${this._showHelp
@@ -97,7 +101,11 @@ export class ZHADeviceBindingControl extends LitElement {
               : ""}
             <mwc-button
               @click="${this._onUnbindDevicesClick}"
-              .disabled="${!(this._deviceToBind && this.selectedDevice)}"
+              .disabled="${!(
+                this._deviceToBind &&
+                this.selectedDevice &&
+                this.selectedDevice.available
+              )}"
               >Unbind</mwc-button
             >
             ${this._showHelp
@@ -126,7 +134,12 @@ export class ZHADeviceBindingControl extends LitElement {
   }
 
   private async _onBindDevicesClick(): Promise<void> {
-    if (this.hass && this._deviceToBind && this.selectedDevice) {
+    if (
+      this.hass &&
+      this._deviceToBind &&
+      this.selectedDevice &&
+      this.selectedDevice.available
+    ) {
       await bindDevices(
         this.hass,
         this.selectedDevice.ieee,
@@ -136,7 +149,12 @@ export class ZHADeviceBindingControl extends LitElement {
   }
 
   private async _onUnbindDevicesClick(): Promise<void> {
-    if (this.hass && this._deviceToBind && this.selectedDevice) {
+    if (
+      this.hass &&
+      this._deviceToBind &&
+      this.selectedDevice &&
+      this.selectedDevice.available
+    ) {
       await unbindDevices(
         this.hass,
         this.selectedDevice.ieee,
