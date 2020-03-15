@@ -56,6 +56,7 @@ export interface ZHAGroup {
   name: string;
   group_id: number;
   members: ZHADevice[];
+  entity_domain: string;
 }
 
 export const reconfigureNode = (
@@ -226,6 +227,17 @@ export const addMembersToGroup = (
     type: "zha/group/members/add",
     group_id: groupId,
     members: membersToAdd,
+  });
+
+export const updateGroup = (
+  hass: HomeAssistant,
+  groupId: number,
+  entityDomain: string
+): Promise<ZHAGroup> =>
+  hass.callWS({
+    type: "zha/group/update",
+    group_id: groupId,
+    entity_domain: entityDomain,
   });
 
 export const removeMembersFromGroup = (

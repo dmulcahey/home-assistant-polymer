@@ -22,16 +22,21 @@ import {
   fetchGroupableDevices,
   addMembersToGroup,
   removeMembersFromGroup,
+  updateGroup,
 } from "../../../data/zha";
 import { formatAsPaddedHex } from "./functions";
 import "./zha-device-card";
 import "./zha-devices-data-table";
 import { navigate } from "../../../common/navigate";
+import "@polymer/paper-dropdown-menu/paper-dropdown-menu";
 import "@polymer/paper-icon-button/paper-icon-button";
+import "@polymer/paper-item/paper-item";
+import "@polymer/paper-listbox/paper-listbox";
 import "@polymer/paper-spinner/paper-spinner";
 import "@material/mwc-button";
 import { SelectionChangedEvent } from "../../../components/data-table/ha-data-table";
 import { HASSDomEvent } from "../../../common/dom/fire_event";
+import { ItemSelectedEvent } from "./types";
 
 @customElement("zha-group-page")
 export class ZHAGroupPage extends LitElement {
@@ -46,8 +51,10 @@ export class ZHAGroupPage extends LitElement {
   @property() private _filteredDevices: ZHADevice[] = [];
   @property() private _selectedDevicesToAdd: string[] = [];
   @property() private _selectedDevicesToRemove: string[] = [];
+  @property() private _selectedEntityDomainIndex = -1;
 
   private _firstUpdatedCalled: boolean = false;
+  private _entityDomains: string[] = ["None", "Light"];
 
   private _members = memoizeOne(
     (group: ZHAGroup): ZHADevice[] => group.members
@@ -109,6 +116,21 @@ export class ZHAGroupPage extends LitElement {
 
           <p><b>Name:</b> ${this.group.name}</p>
           <p><b>Group Id:</b> ${formatAsPaddedHex(this.group.group_id)}</p>
+          <div class="node-picker">
+            <paper-dropdown-menu .label=${"Entity domain"} class="menu">
+              <paper-listbox
+                slot="dropdown-content"
+                .selected="${this._selectedEntityDomainIndex}"
+                @iron-select="${this._selectedEntityDomainChanged}"
+              >
+                ${this._entityDomains.map(
+                  (entry) => html`
+                    <paper-item>${entry}</paper-item>
+                  `
+                )}
+              </paper-listbox>
+            </paper-dropdown-menu>
+          </div>
 
           <div class="header">
             ${this.hass.localize("ui.panel.config.zha.groups.members")}
@@ -209,6 +231,9 @@ export class ZHAGroupPage extends LitElement {
   private async _fetchData() {
     if (this.groupId !== null && this.groupId !== undefined) {
       this.group = await fetchGroup(this.hass!, this.groupId);
+      this._selectedEntityDomainIndex = this._entityDomains.findIndex(
+        (domain) => domain.toLowerCase() === this.group!.entity_domain
+      );
     }
     this.devices = await fetchGroupableDevices(this.hass!);
     // filter the groupable devices so we only show devices that aren't already in the group
@@ -258,6 +283,16 @@ export class ZHAGroupPage extends LitElement {
     this._processingRemove = false;
   }
 
+  private async _selectedEntityDomainChanged(
+    event: ItemSelectedEvent
+  ): Promise<void> {
+    this._selectedEntityDomainIndex = event.target!.selected;
+    const entityDomain = this._entityDomains[
+      this._selectedEntityDomainIndex
+    ].toLowerCase();
+    await updateGroup(this.hass, this.groupId, entityDomain);
+  }
+
   private async _deleteGroup(): Promise<void> {
     await removeGroups(this.hass, [this.groupId]);
     navigate(this, `/config/zha/groups`, true);
@@ -277,7 +312,13 @@ export class ZHAGroupPage extends LitElement {
           line-height: var(--paper-font-display1_-_line-height);
           opacity: var(--dark-primary-opacity);
         }
-
+        .menu {
+          width: 100%;
+        }
+        .node-picker {
+          align-items: center;
+          padding-bottom: 10px;
+        }
         ha-config-section *:last-child {
           padding-bottom: 24px;
         }
