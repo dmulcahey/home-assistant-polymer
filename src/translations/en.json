@@ -2018,6 +2018,79 @@
             "unbind_button_label": "Unbind Group",
             "bind_button_help": "Bind the selected group to the selected device clusters.",
             "unbind_button_help": "Unbind the selected group from the selected device clusters."
+          },
+          "configuration": {
+            "device": {
+              "labels": {
+                "path": "Path"
+              }
+            },
+            "ota": {
+              "labels": {
+                "otau_directory": "Firmware Directory",
+                "ikea_provider": "Ikea",
+                "ledvance_provider": "Ledvance"
+              }
+            },
+            "network": {
+              "labels": {
+                "channel": "Channel",
+                "channels": "Channels",
+                "extended_pan_id": "Extended Pan Id",
+                "key": "Key",
+                "pan_id": "Pan Id",
+                "tc_address": "Trust Center Address",
+                "tc_link_key": "Trust Center Link Key",
+                "update_id": "Update Id"
+              }
+            },
+            "radio": {
+              "labels": {
+                "source_routing": "Use Zigbee Source Routing",
+                "CONFIG_NEIGHBOR_TABLE_SIZE": "Neighbor Table Size",
+                "CONFIG_APS_UNICAST_MESSAGE_COUNT": "APS Unicast Message Count",
+                "CONFIG_BINDING_TABLE_SIZE": "Binding Table Size",
+                "CONFIG_ADDRESS_TABLE_SIZE": "Address Table Size",
+                "CONFIG_MULTICAST_TABLE_SIZE": "Multicast Table Size",
+                "CONFIG_ROUTE_TABLE_SIZE": "Route Table Size",
+                "CONFIG_DISCOVERY_TABLE_SIZE": "Discovery Table Size",
+                "CONFIG_BROADCAST_ALARM_DATA_SIZE": "Broadcast Alarm Data Size",
+                "CONFIG_UNICAST_ALARM_DATA_SIZE": "Unicast Alarm Data Size",
+                "CONFIG_STACK_PROFILE": "Stack Profile",
+                "CONFIG_SECURITY_LEVEL": "Security Level",
+                "CONFIG_MAX_HOPS": "Max Hops",
+                "CONFIG_MAX_END_DEVICE_CHILDREN": "Max End Device Children",
+                "CONFIG_INDIRECT_TRANSMISSION_TIMEOUT": "Indirect Transmission Timeout",
+                "CONFIG_END_DEVICE_POLL_TIMEOUT": "End Device Poll Timeout",
+                "CONFIG_MOBILE_NODE_POLL_TIMEOUT": "Mobile Node POll Timeout",
+                "CONFIG_RESERVED_MOBILE_CHILD_ENTRIES": "Reserved Mobile Child Entries",
+                "CONFIG_TX_POWER_MODE": "TX Power Mode",
+                "CONFIG_DISABLE_RELAY": "Disable Relay",
+                "CONFIG_TRUST_CENTER_ADDRESS_CACHE_SIZE": "Trust Center Address Cache Size",
+                "CONFIG_SOURCE_ROUTE_TABLE_SIZE": "Source Route Table Size",
+                "CONFIG_FRAGMENT_WINDOW_SIZE": "Fragment Window Size",
+                "CONFIG_FRAGMENT_DELAY_MS": "Fragment Delay (ms)",
+                "CONFIG_KEY_TABLE_SIZE": "Key Table Size",
+                "CONFIG_APS_ACK_TIMEOUT": "APS Acknowledgement Timeout",
+                "CONFIG_ACTIVE_SCAN_DURATION": "Active Scan Duration",
+                "CONFIG_END_DEVICE_BIND_TIMEOUT": "End Device Bind Timeout",
+                "CONFIG_PAN_ID_CONFLICT_REPORT_THRESHOLD": "Pan Id Conflict Report Threshold",
+                "CONFIG_REQUEST_KEY_TIMEOUT": "Request Key Timeout",
+                "CONFIG_CERTIFICATE_TABLE_SIZE": "Certificate Table Size",
+                "CONFIG_APPLICATION_ZDO_FLAGS": "Application ZDO Flags",
+                "CONFIG_BROADCAST_TABLE_SIZE": "Broadcast Table Size",
+                "CONFIG_MAC_FILTER_TABLE_SIZE": "Mac Filter Table Size",
+                "CONFIG_SUPPORTED_NETWORKS": "Number Of Supported Networks",
+                "CONFIG_SEND_MULTICASTS_TO_SLEEPY_ADDRESS": "Send Multicast Messages To Sleepy Addresses",
+                "CONFIG_ZLL_GROUP_ADDRESSES": "ZLL Group Addresses",
+                "CONFIG_ZLL_RSSI_THRESHOLD": "ZLL RSSI Threshold",
+                "CONFIG_RF4CE_PAIRING_TABLE_SIZE": "RF4CE Pairing Table Size",
+                "CONFIG_RF4CE_PENDING_OUTGOING_PACKET_TABLE_SIZE": "RF4CE Pending Outgoing Packet Table Size",
+                "CONFIG_MTORR_FLOW_CONTROL": "Many To One Routing Flow Control",
+                "CONFIG_TRANSIENT_KEY_TIMEOUT_S": "Transient Key Timeout (s)",
+                "CONFIG_PACKET_BUFFER_COUNT": "Packet Buffer Count"
+              }
+            }
           }
         },
         "zwave": {
