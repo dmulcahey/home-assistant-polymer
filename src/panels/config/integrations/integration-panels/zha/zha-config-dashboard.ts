@@ -107,11 +107,13 @@ class ZHAConfigDashboard extends LitElement {
               <zha-config-form
                 .hass=${this.hass}
                 .title=${"Device Configuration"}
+                .section=${"device"}
                 .configuration=${this._configuration.device}
               ></zha-config-form>
               <zha-config-form
                 .hass=${this.hass}
                 .title=${"OTA Configuration"}
+                .section=${"ota"}
                 .configuration=${this._configuration.ota}
               >
               </zha-config-form>
@@ -120,6 +122,7 @@ class ZHAConfigDashboard extends LitElement {
                     <zha-config-form
                       .hass=${this.hass}
                       .title=${"Network Configuration"}
+                      .section=${"network"}
                       .configuration=${this._configuration.network}
                     ></zha-config-form>
                   `
@@ -133,6 +136,7 @@ class ZHAConfigDashboard extends LitElement {
               <zha-config-form
                 .hass=${this.hass}
                 .title=${"Radio Configuration"}
+                .section=${"radio"}
                 .configuration=${this._configuration.ezsp_config}
               ></zha-config-form>
             `

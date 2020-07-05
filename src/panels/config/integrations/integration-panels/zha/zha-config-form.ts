@@ -18,7 +18,11 @@ class ZHAConfigForm extends LitElement {
 
   @property() public title = "";
 
+  @property() public section = "";
+
   @property({ type: Object }) public configuration: any = {};
+
+  @property({ type: Object }) private _data: any;
 
   protected render(): TemplateResult {
     return html`
@@ -27,10 +31,27 @@ class ZHAConfigForm extends LitElement {
           <ha-form
             .data=${this.configuration.data}
             .schema=${this.configuration.schema}
+            @value-changed=${this._dataChanged}
+            .computeLabel=${this._computeLabelCallback(
+              this.hass.localize,
+              this.section
+            )}
           ></ha-form>
         </div>
       </ha-card>
     `;
+  }
+
+  private _computeLabelCallback(localize, section) {
+    // Returns a callback for ha-form to calculate labels per schema object
+    return (schema) =>
+      localize(
+        `ui.panel.config.zha.configuration.${section}.labels.${schema.name}`
+      ) || schema.name;
+  }
+
+  private _dataChanged(ev: CustomEvent) {
+    this._data = ev.detail.value;
   }
 
   static get styles(): CSSResultArray {
