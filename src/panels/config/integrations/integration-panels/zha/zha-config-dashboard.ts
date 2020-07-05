@@ -23,6 +23,10 @@ import { computeRTL } from "../../../../../common/util/compute_rtl";
 import "@material/mwc-button/mwc-button";
 import "../../../../../components/ha-form/ha-form";
 import { fetchZHAConfiguration } from "../../../../../data/zha";
+import "./zha-config-device";
+import "./zha-config-ota";
+import "./zha-config-network";
+import "./zha-config-ezsp";
 
 export const zhaTabs: PageNavigation[] = [
   {
@@ -77,17 +81,7 @@ class ZHAConfigDashboard extends LitElement {
         .tabs=${zhaTabs}
         back-path="/config/integrations"
       >
-        <ha-card header="Zigbee Coordinator Configuration">
-          <div class="card-content">
-            ${this._configuration
-              ? html`
-                  <ha-form
-                    .data=${this._configuration.device.data}
-                    .schema=${this._configuration.device.schema}
-                  ></ha-form>
-                `
-              : ""}
-          </div>
+        <ha-card header="Zigbee Home Automation Configuration">
           ${this.configEntryId
             ? html`<div class="card-actions">
                 <a
@@ -113,24 +107,21 @@ class ZHAConfigDashboard extends LitElement {
         </ha-card>
         ${this._configuration
           ? html`
-              <ha-card header="Zigbee OTA Configuration">
-                <div class="card-content">
-                  <ha-form
-                    .data=${this._configuration.ota.data}
-                    .schema=${this._configuration.ota.schema}
-                  ></ha-form>
-                </div>
-              </ha-card>
+              <zha-config-device
+                .hass=${this.hass}
+                .configuration=${this._configuration.device}
+              ></zha-config-device>
+              <zha-config-ota
+                .hass=${this.hass}
+                .configuration=${this._configuration.ota}
+              >
+              </zha-config-ota>
               ${this.hass.userData?.showAdvanced
                 ? html`
-                    <ha-card header="Zigbee Network Configuration">
-                      <div class="card-content">
-                        <ha-form
-                          .data=${this._configuration.network.data}
-                          .schema=${this._configuration.network.schema}
-                        ></ha-form>
-                      </div>
-                    </ha-card>
+                    <zha-config-network
+                      .hass=${this.hass}
+                      .configuration=${this._configuration.network}
+                    ></zha-config-network>
                   `
                 : ""}
             `
@@ -139,14 +130,10 @@ class ZHAConfigDashboard extends LitElement {
         this._configuration.ezsp_config &&
         this.hass.userData?.showAdvanced
           ? html`
-              <ha-card header="Zigbee Radio Configuration">
-                <div class="card-content">
-                  <ha-form
-                    .data=${this._configuration.ezsp_config.data}
-                    .schema=${this._configuration.ezsp_config.schema}
-                  ></ha-form>
-                </div>
-              </ha-card>
+              <zha-config-ezsp
+                .hass=${this.hass}
+                .configuration=${this._configuration.ezsp_config}
+              ></zha-config-ezsp>
             `
           : ""}
         <a href="/config/zha/add" slot="fab">
