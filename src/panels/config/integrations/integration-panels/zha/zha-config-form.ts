@@ -12,15 +12,17 @@ import { haStyle } from "../../../../../resources/styles";
 import type { HomeAssistant } from "../../../../../types";
 import "../../../../../components/ha-form/ha-form";
 
-@customElement("zha-config-ezsp")
-class ZHAConfigEZSP extends LitElement {
+@customElement("zha-config-form")
+class ZHAConfigForm extends LitElement {
   @property({ type: Object }) public hass!: HomeAssistant;
+
+  @property() public title = "";
 
   @property({ type: Object }) public configuration: any = {};
 
   protected render(): TemplateResult {
     return html`
-      <ha-card header="Radio Configuration">
+      <ha-card header=${this.title}>
         <div class="card-content">
           <ha-form
             .data=${this.configuration.data}
@@ -47,6 +49,6 @@ class ZHAConfigEZSP extends LitElement {
 
 declare global {
   interface HTMLElementTagNameMap {
-    "zha-config-ezsp": ZHAConfigEZSP;
+    "zha-config-form": ZHAConfigForm;
   }
 }

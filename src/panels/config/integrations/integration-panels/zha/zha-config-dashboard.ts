@@ -23,10 +23,7 @@ import { computeRTL } from "../../../../../common/util/compute_rtl";
 import "@material/mwc-button/mwc-button";
 import "../../../../../components/ha-form/ha-form";
 import { fetchZHAConfiguration } from "../../../../../data/zha";
-import "./zha-config-device";
-import "./zha-config-ota";
-import "./zha-config-network";
-import "./zha-config-ezsp";
+import "./zha-config-form";
 
 export const zhaTabs: PageNavigation[] = [
   {
@@ -107,21 +104,24 @@ class ZHAConfigDashboard extends LitElement {
         </ha-card>
         ${this._configuration
           ? html`
-              <zha-config-device
+              <zha-config-form
                 .hass=${this.hass}
+                .title=${"Device Configuration"}
                 .configuration=${this._configuration.device}
-              ></zha-config-device>
-              <zha-config-ota
+              ></zha-config-form>
+              <zha-config-form
                 .hass=${this.hass}
+                .title=${"OTA Configuration"}
                 .configuration=${this._configuration.ota}
               >
-              </zha-config-ota>
+              </zha-config-form>
               ${this.hass.userData?.showAdvanced
                 ? html`
-                    <zha-config-network
+                    <zha-config-form
                       .hass=${this.hass}
+                      .title=${"Network Configuration"}
                       .configuration=${this._configuration.network}
-                    ></zha-config-network>
+                    ></zha-config-form>
                   `
                 : ""}
             `
@@ -130,10 +130,11 @@ class ZHAConfigDashboard extends LitElement {
         this._configuration.ezsp_config &&
         this.hass.userData?.showAdvanced
           ? html`
-              <zha-config-ezsp
+              <zha-config-form
                 .hass=${this.hass}
+                .title=${"Radio Configuration"}
                 .configuration=${this._configuration.ezsp_config}
-              ></zha-config-ezsp>
+              ></zha-config-form>
             `
           : ""}
         <a href="/config/zha/add" slot="fab">
