@@ -262,3 +262,8 @@ export const addGroup = (
     group_name: groupName,
     members: membersToAdd,
   });
+
+export const fetchZHAConfiguration = (hass: HomeAssistant): Promise<any> =>
+  hass.callWS({
+    type: "zha/configuration",
+  });
