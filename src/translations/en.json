@@ -2062,7 +2062,7 @@
                 "CONFIG_MAX_END_DEVICE_CHILDREN": "Max End Device Children",
                 "CONFIG_INDIRECT_TRANSMISSION_TIMEOUT": "Indirect Transmission Timeout",
                 "CONFIG_END_DEVICE_POLL_TIMEOUT": "End Device Poll Timeout",
-                "CONFIG_MOBILE_NODE_POLL_TIMEOUT": "Mobile Node POll Timeout",
+                "CONFIG_MOBILE_NODE_POLL_TIMEOUT": "Mobile Node Poll Timeout",
                 "CONFIG_RESERVED_MOBILE_CHILD_ENTRIES": "Reserved Mobile Child Entries",
                 "CONFIG_TX_POWER_MODE": "TX Power Mode",
                 "CONFIG_DISABLE_RELAY": "Disable Relay",
