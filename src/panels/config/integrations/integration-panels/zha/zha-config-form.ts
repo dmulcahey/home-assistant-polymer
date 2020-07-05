@@ -25,11 +25,25 @@ class ZHAConfigForm extends LitElement {
   @property({ type: Object }) private _data: any;
 
   protected render(): TemplateResult {
+    const data = this._dataProcessed;
+    const allRequiredInfoFilledIn =
+      this._data === undefined
+        ? // If no data filled in, just check that any field is required
+          this.configuration.schema.find((field) => !field.optional) ===
+          undefined
+        : // If data is filled in, make sure all required fields are
+          this._data &&
+          this.configuration.schema &&
+          this.configuration.schema.every(
+            (field) =>
+              field.optional ||
+              !["", undefined].includes(this._data![field.name])
+          );
     return html`
       <ha-card header=${this.title}>
         <div class="card-content">
           <ha-form
-            .data=${this.configuration.data}
+            .data=${data}
             .schema=${this.configuration.schema}
             @value-changed=${this._dataChanged}
             .computeLabel=${this._computeLabelCallback(
@@ -52,6 +66,24 @@ class ZHAConfigForm extends LitElement {
 
   private _dataChanged(ev: CustomEvent) {
     this._data = ev.detail.value;
+  }
+
+  private get _dataProcessed() {
+    if (this._data !== undefined) {
+      return this._data;
+    }
+
+    const data = {};
+    this.configuration.schema.forEach((field) => {
+      if (field.name in this.configuration.data) {
+        data[field.name] = this.configuration.data[field.name];
+      } else if ("default" in field) {
+        data[field.name] = field.default;
+      }
+    });
+
+    this._data = data;
+    return data;
   }
 
   static get styles(): CSSResultArray {
