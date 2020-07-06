@@ -22,7 +22,10 @@ import type { PageNavigation } from "../../../../../layouts/hass-tabs-subpage";
 import { computeRTL } from "../../../../../common/util/compute_rtl";
 import "@material/mwc-button/mwc-button";
 import "../../../../../components/ha-form/ha-form";
-import { fetchZHAConfiguration } from "../../../../../data/zha";
+import {
+  fetchZHAConfiguration,
+  updateZHAConfiguration,
+} from "../../../../../data/zha";
 import "./zha-config-form";
 
 export const zhaTabs: PageNavigation[] = [
@@ -141,6 +144,13 @@ class ZHAConfigDashboard extends LitElement {
               ></zha-config-form>
             `
           : ""}
+        <ha-card>
+          <div class="card-actions">
+            <mwc-button @click=${this._updateConfiguration}
+              >Update Configuration</mwc-button
+            >
+          </div>
+        </ha-card>
         <a href="/config/zha/add" slot="fab">
           <mwc-fab
             title=${this.hass.localize("ui.panel.config.zha.add_device")}
@@ -155,6 +165,10 @@ class ZHAConfigDashboard extends LitElement {
 
   private async _fetchConfiguration(): Promise<any> {
     this._configuration = await fetchZHAConfiguration(this.hass!);
+  }
+
+  private async _updateConfiguration(): Promise<any> {
+    await updateZHAConfiguration(this.hass!);
   }
 
   static get styles(): CSSResultArray {

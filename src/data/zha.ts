@@ -267,3 +267,8 @@ export const fetchZHAConfiguration = (hass: HomeAssistant): Promise<any> =>
   hass.callWS({
     type: "zha/configuration",
   });
+
+export const updateZHAConfiguration = (hass: HomeAssistant): Promise<any> =>
+  hass.callWS({
+    type: "zha/configuration/update",
+  });
