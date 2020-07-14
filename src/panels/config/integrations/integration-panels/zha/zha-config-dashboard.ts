@@ -168,7 +168,25 @@ class ZHAConfigDashboard extends LitElement {
   }
 
   private async _updateConfiguration(): Promise<any> {
-    await updateZHAConfiguration(this.hass!);
+    const sections = ["device", "ezsp_config", "network", "ota"];
+    const data = {};
+    for (var section of sections) {
+      data[section] = {};
+      const sectionData = this._configuration[section].data;
+      const sectionSchema = this._configuration[section].schema;
+      for (var field of sectionSchema) {
+        if (
+          field.name in sectionData &&
+          sectionData[field.name] !== field.default
+        ) {
+          data[section][field.name] = sectionData[field.name];
+        }
+      }
+      if (data[section] === {}) {
+        delete data[section];
+      }
+    }
+    await updateZHAConfiguration(this.hass!, data);
   }
 
   static get styles(): CSSResultArray {
