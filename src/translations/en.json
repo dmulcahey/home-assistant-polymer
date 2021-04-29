@@ -2396,6 +2396,7 @@
             "no_devices_found": "No devices were found, make sure they are in pairing mode and keep them awake while discovering is running.",
             "search_again": "Search Again"
           },
+          "logs_page": { "title": "ZHA Logs", "caption": "Logs" },
           "add_device": "Add Device",
           "clusters": {
             "header": "Clusters",
