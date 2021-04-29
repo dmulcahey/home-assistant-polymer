@@ -146,6 +146,28 @@ export const reconfigureNode = (
   );
 };
 
+export interface ZHAGatewayLogMessage {
+  type: string;
+  log_entry: {
+    timestamp: string;
+    level: string;
+    primary_tags: string;
+    message: string | string[];
+  };
+}
+
+export const viewZHALogs = (
+  hass: HomeAssistant,
+  callbackFunction: (message: ZHAGatewayLogMessage) => void
+) => {
+  return hass.connection.subscribeMessage(
+    (message: ZHAGatewayLogMessage) => callbackFunction(message),
+    {
+      type: "zha/logs",
+    }
+  );
+};
+
 export const refreshTopology = (hass: HomeAssistant): Promise<void> =>
   hass.callWS({
     type: "zha/topology/update",

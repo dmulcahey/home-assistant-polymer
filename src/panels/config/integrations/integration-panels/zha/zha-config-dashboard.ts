@@ -1,5 +1,11 @@
 import "@material/mwc-button/mwc-button";
-import { mdiFolderMultipleOutline, mdiLan, mdiNetwork, mdiPlus } from "@mdi/js";
+import {
+  mdiFolderMultipleOutline,
+  mdiLan,
+  mdiNetwork,
+  mdiPlus,
+  mdiMathLog,
+} from "@mdi/js";
 import "@polymer/paper-item/paper-item";
 import "@polymer/paper-item/paper-item-body";
 import {
@@ -43,6 +49,11 @@ export const zhaTabs: PageNavigation[] = [
     translationKey: "ui.panel.config.zha.visualization.caption",
     path: `/config/zha/visualization`,
     iconPath: mdiLan,
+  },
+  {
+    translationKey: "ui.panel.config.zha.logs_page.caption",
+    path: `/config/zha/logs`,
+    iconPath: mdiMathLog,
   },
 ];
 
