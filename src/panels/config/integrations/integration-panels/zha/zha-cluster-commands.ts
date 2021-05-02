@@ -31,6 +31,7 @@ import {
   IssueCommandServiceData,
   ItemSelectedEvent,
 } from "./types";
+import "../../../../../components/ha-form/ha-form";
 
 export class ZHAClusterCommands extends LitElement {
   @property({ attribute: false }) public hass?: HomeAssistant;
@@ -133,6 +134,18 @@ export class ZHAClusterCommands extends LitElement {
                     )}"
                   ></paper-input>
                 </div>
+                ${this._commands[this._selectedCommandIndex].schema &&
+                this._commands[this._selectedCommandIndex].schema.length
+                  ? html`
+                      <div class="input-text">
+                        <ha-form
+                          .schema=${this._commands[this._selectedCommandIndex]
+                            .schema}
+                          .data=${{}}
+                        ></ha-form>
+                      </div>
+                    `
+                  : ""}
                 <div class="card-actions">
                   <ha-call-service-button
                     .hass=${this.hass}

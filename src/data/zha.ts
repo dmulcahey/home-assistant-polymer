@@ -105,6 +105,7 @@ export interface Command {
   name: string;
   id: number;
   type: string;
+  schema: any;
 }
 
 export interface ReadAttributeServiceData {
