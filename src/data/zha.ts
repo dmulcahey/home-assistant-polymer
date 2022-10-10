@@ -49,6 +49,8 @@ export interface ZHADeviceEndpoint {
 export interface Attribute {
   name: string;
   id: number;
+  access: string;
+  schema: HaFormSchema[];
 }
 
 export interface Cluster {

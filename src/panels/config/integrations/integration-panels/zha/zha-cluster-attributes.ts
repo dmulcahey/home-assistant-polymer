@@ -31,6 +31,10 @@ import {
   ItemSelectedEvent,
   SetAttributeServiceData,
 } from "./types";
+import "../../../../../components/ha-form/ha-form";
+import {
+  HaFormSchema,
+} from "../../../../../components/ha-form/types";
 
 @customElement("zha-cluster-attributes")
 export class ZHAClusterAttributes extends LitElement {
@@ -53,10 +57,16 @@ export class ZHAClusterAttributes extends LitElement {
   @state()
   private _setAttributeServiceData?: SetAttributeServiceData;
 
+  @state() private _selectedAttribute?: Attribute;
+
+  @state()
+  private _attributeData: Record<string, any> = {};
+
   protected updated(changedProperties: PropertyValues): void {
     if (changedProperties.has("selectedCluster")) {
       this._attributes = undefined;
       this._selectedAttributeId = undefined;
+      this._selectedAttribute = undefined;
       this._attributeValue = "";
       this._fetchAttributesForCluster();
     }
@@ -100,13 +110,17 @@ export class ZHAClusterAttributes extends LitElement {
   private _renderAttributeInteractions(): TemplateResult {
     return html`
       <div class="input-text">
-        <paper-input
-          label=${this.hass!.localize("ui.panel.config.zha.common.value")}
-          type="string"
-          .value=${this._attributeValue}
-          @value-changed=${this._onAttributeValueChanged}
-          placeholder=${this.hass!.localize("ui.panel.config.zha.common.value")}
-        ></paper-input>
+        <div class="command-form">
+          <ha-form
+            .hass=${this.hass}
+            .schema=${this._selectedAttribute!.schema}
+            @value-changed=${this._onAttributeValueChanged}
+            .data=${this._attributeData}
+            .disabled=${this._readingAttribute ||
+            this._selectedAttribute!.access.indexOf("w") === -1}
+            .computeLabel=${this._computeLabelCallback}
+          ></ha-form>
+        </div>
       </div>
       <div class="input-text">
         <paper-input
@@ -129,19 +143,25 @@ export class ZHAClusterAttributes extends LitElement {
             "ui.panel.config.zha.cluster_attributes.read_zigbee_attribute"
           )}
         </ha-progress-button>
-        <ha-call-service-button
-          .hass=${this.hass}
-          domain="zha"
-          service="set_zigbee_cluster_attribute"
-          .serviceData=${this._setAttributeServiceData}
-        >
-          ${this.hass!.localize(
-            "ui.panel.config.zha.cluster_attributes.write_zigbee_attribute"
-          )}
-        </ha-call-service-button>
+        ${this._selectedAttribute!.access.indexOf("w") !== -1
+          ? html`
+              <ha-call-service-button
+                .hass=${this.hass}
+                domain="zha"
+                service="set_zigbee_cluster_attribute"
+                .serviceData=${this._setAttributeServiceData}
+              >
+                ${this.hass!.localize(
+                  "ui.panel.config.zha.cluster_attributes.write_zigbee_attribute"
+                )}
+              </ha-call-service-button>
+            `
+          : ""}
       </div>
     `;
   }
+
+  private _computeLabelCallback = (_: HaFormSchema): string => "";
 
   private async _fetchAttributesForCluster(): Promise<void> {
     if (this.device && this.selectedCluster && this.hass) {
@@ -155,6 +175,7 @@ export class ZHAClusterAttributes extends LitElement {
       this._attributes.sort((a, b) => a.name.localeCompare(b.name));
       if (this._attributes.length > 0) {
         this._selectedAttributeId = this._attributes[0].id;
+        this._selectedAttribute = this._attributes[0];
       }
     }
   }
@@ -196,8 +217,9 @@ export class ZHAClusterAttributes extends LitElement {
     };
   }
 
-  private _onAttributeValueChanged(value: ChangeEvent): void {
-    this._attributeValue = value.detail!.value;
+  private _onAttributeValueChanged(ev: CustomEvent): Promise<void> {
+    this._attributeData = ev.detail.value;
+    this._attributeValue = this._attributeData[this._selectedAttribute!.name];
     this._setAttributeServiceData = this._computeSetAttributeServiceData();
   }
 
@@ -213,6 +235,8 @@ export class ZHAClusterAttributes extends LitElement {
       this._readingAttribute = true;
       try {
         this._attributeValue = await readAttributeValue(this.hass, data);
+        this._attributeData[this._selectedAttribute!.name] =
+          this._attributeValue;
         forwardHaptic("success");
         button.actionSuccess();
       } catch (err: any) {
@@ -226,7 +250,12 @@ export class ZHAClusterAttributes extends LitElement {
 
   private _selectedAttributeChanged(event: ItemSelectedEvent): void {
     this._selectedAttributeId = Number(event.target!.value);
+    this._selectedAttribute = this._attributes!.find(
+      (attribute) => attribute.id === this._selectedAttributeId
+    );
     this._attributeValue = "";
+    this._attributeData = {};
+    this._attributeData[this._selectedAttribute!.name] = this._attributeValue;
   }
 
   static get styles(): CSSResultGroup {
