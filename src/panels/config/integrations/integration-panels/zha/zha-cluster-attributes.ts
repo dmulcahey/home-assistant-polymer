@@ -8,7 +8,7 @@ import {
   PropertyValues,
   TemplateResult,
 } from "lit";
-import { customElement, property, state } from "lit/decorators";
+import { customElement, property, query, state } from "lit/decorators";
 import { stopPropagation } from "../../../../../common/dom/stop_propagation";
 import "../../../../../components/buttons/ha-call-service-button";
 import "../../../../../components/ha-card";
@@ -31,10 +31,8 @@ import {
   ItemSelectedEvent,
   SetAttributeServiceData,
 } from "./types";
-import "../../../../../components/ha-form/ha-form";
-import {
-  HaFormSchema,
-} from "../../../../../components/ha-form/types";
+import { HaFormSchema } from "../../../../../components/ha-form/types";
+import { HaForm } from "../../../../../components/ha-form/ha-form";
 
 @customElement("zha-cluster-attributes")
 export class ZHAClusterAttributes extends LitElement {
@@ -61,6 +59,9 @@ export class ZHAClusterAttributes extends LitElement {
 
   @state()
   private _attributeData: Record<string, any> = {};
+
+  @query("ha-form", true)
+  private _attributeForm!: HaForm;
 
   protected updated(changedProperties: PropertyValues): void {
     if (changedProperties.has("selectedCluster")) {
@@ -117,7 +118,8 @@ export class ZHAClusterAttributes extends LitElement {
             @value-changed=${this._onAttributeValueChanged}
             .data=${this._attributeData}
             .disabled=${this._readingAttribute ||
-            this._selectedAttribute!.access.indexOf("w") === -1}
+            this._selectedAttribute!.access.indexOf("Write") === -1}
+            .editMode=${true}
             .computeLabel=${this._computeLabelCallback}
           ></ha-form>
         </div>
@@ -143,20 +145,17 @@ export class ZHAClusterAttributes extends LitElement {
             "ui.panel.config.zha.cluster_attributes.read_zigbee_attribute"
           )}
         </ha-progress-button>
-        ${this._selectedAttribute!.access.indexOf("w") !== -1
-          ? html`
-              <ha-call-service-button
-                .hass=${this.hass}
-                domain="zha"
-                service="set_zigbee_cluster_attribute"
-                .serviceData=${this._setAttributeServiceData}
-              >
-                ${this.hass!.localize(
-                  "ui.panel.config.zha.cluster_attributes.write_zigbee_attribute"
-                )}
-              </ha-call-service-button>
-            `
-          : ""}
+        <ha-call-service-button
+          .hass=${this.hass}
+          domain="zha"
+          service="set_zigbee_cluster_attribute"
+          .serviceData=${this._setAttributeServiceData}
+          .disabled=${this._selectedAttribute!.access.indexOf("Write") === -1}
+        >
+          ${this.hass!.localize(
+            "ui.panel.config.zha.cluster_attributes.write_zigbee_attribute"
+          )}
+        </ha-call-service-button>
       </div>
     `;
   }
@@ -217,7 +216,7 @@ export class ZHAClusterAttributes extends LitElement {
     };
   }
 
-  private _onAttributeValueChanged(ev: CustomEvent): Promise<void> {
+  private _onAttributeValueChanged(ev: CustomEvent): void {
     this._attributeData = ev.detail.value;
     this._attributeValue = this._attributeData[this._selectedAttribute!.name];
     this._setAttributeServiceData = this._computeSetAttributeServiceData();
@@ -237,6 +236,10 @@ export class ZHAClusterAttributes extends LitElement {
         this._attributeValue = await readAttributeValue(this.hass, data);
         this._attributeData[this._selectedAttribute!.name] =
           this._attributeValue;
+        // this makes the disabled form update with the new value
+        if (this._selectedAttribute!.access.indexOf("Write") === -1) {
+          this._attributeForm.requestUpdate();
+        }
         forwardHaptic("success");
         button.actionSuccess();
       } catch (err: any) {
