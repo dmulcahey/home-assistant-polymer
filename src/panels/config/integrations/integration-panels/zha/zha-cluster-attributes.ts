@@ -293,6 +293,10 @@ export class ZHAClusterAttributes extends LitElement {
         .header {
           flex-grow: 1;
         }
+
+        .content {
+          outline: none;
+        }
       `,
     ];
   }

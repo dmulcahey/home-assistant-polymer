@@ -230,6 +230,10 @@ export class ZHAClusterCommands extends LitElement {
           flex-grow: 1;
         }
 
+        .content {
+          outline: none;
+        }
+
         .toggle-help-icon {
           float: right;
           top: -6px;
