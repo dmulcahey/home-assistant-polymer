@@ -1,6 +1,7 @@
 import "@material/mwc-button";
 import { css, CSSResultGroup, html, LitElement, PropertyValues } from "lit";
 import { customElement, property, query, state } from "lit/decorators";
+import { DataSet } from "vis-data/peer/esm/vis-data";
 import {
   Edge,
   EdgeOptions,
@@ -42,32 +43,31 @@ export class ZHANetworkVisualizationPage extends LitElement {
   @state()
   private zoomedDeviceId?: string;
 
-  @query("#visualization", true)
-  private _visualization?: HTMLElement;
-
-  @state()
-  private _devices: Map<string, ZHADevice> = new Map();
-
-  @state()
-  private _devicesByDeviceId: Map<string, ZHADevice> = new Map();
-
-  @state()
-  private _nodes: Node[] = [];
-
-  @state()
-  private _network?: Network;
-
   @state()
   private _filter?: string;
 
+  @query("#visualization", true)
+  private _visualization?: HTMLElement;
+
+  private _devices: Map<string, ZHADevice> = new Map();
+
+  private _devicesByDeviceId: Map<string, ZHADevice> = new Map();
+
+  private _nodes: DataSet<Node & { _lowercaseLabel?: string }> = new DataSet();
+
+  private _edges: DataSet<Edge> = new DataSet();
+
+  private _network?: Network;
+
   private _autoZoom = true;
 
-  private _enablePhysics = true;
+  // Debounce timeout ID
+  private _searchDebounceTimeout?: number;
 
   protected firstUpdated(changedProperties: PropertyValues): void {
     super.firstUpdated(changedProperties);
 
-    // prevent zoomedDeviceIdFromURL from being restored to zoomedDeviceId after the user clears it
+    // Prevent zoomedDeviceIdFromURL from being restored to zoomedDeviceId after the user clears it
     if (this.zoomedDeviceIdFromURL) {
       this.zoomedDeviceId = this.zoomedDeviceIdFromURL;
     }
@@ -78,18 +78,21 @@ export class ZHANetworkVisualizationPage extends LitElement {
 
     this._network = new Network(
       this._visualization!,
-      {},
+      { nodes: this._nodes, edges: this._edges },
       {
         autoResize: true,
         layout: {
-          improvedLayout: true,
+          hierarchical: {
+            enabled: true,
+            direction: "UD",
+            sortMethod: "hubsize",
+            nodeSpacing: 600,
+            levelSeparation: 1000,
+          },
+          improvedLayout: false, // Disable improvedLayout as hierarchical is used
         },
         physics: {
-          barnesHut: {
-            springConstant: 0,
-            avoidOverlap: 10,
-            damping: 0.09,
-          },
+          enabled: false,
         },
         nodes: {
           font: {
@@ -133,6 +136,16 @@ export class ZHANetworkVisualizationPage extends LitElement {
         this._zoomToDevice();
       }
     });
+  }
+
+  disconnectedCallback() {
+    super.disconnectedCallback();
+    if (this._network) {
+      this._network.destroy();
+    }
+    if (this._searchDebounceTimeout) {
+      clearTimeout(this._searchDebounceTimeout);
+    }
   }
 
   protected render() {
@@ -195,16 +208,6 @@ export class ZHANetworkVisualizationPage extends LitElement {
               >
               </ha-checkbox>
             </ha-formfield>
-            <ha-formfield
-              .label=${this.hass!.localize(
-                "ui.panel.config.zha.visualization.enable_physics"
-              )}
-              ><ha-checkbox
-                @change=${this._handlePhysicsCheckboxChange}
-                .checked=${this._enablePhysics}
-              >
-              </ha-checkbox
-            ></ha-formfield>
             <mwc-button @click=${this._refreshTopology}>
               ${this.hass!.localize(
                 "ui.panel.config.zha.visualization.refresh_topology"
@@ -229,58 +232,118 @@ export class ZHANetworkVisualizationPage extends LitElement {
   }
 
   private _updateDevices(devices: ZHADevice[]) {
-    this._nodes = [];
-    const edges: Edge[] = [];
+    const newNodesMap = new Map<string, Node & { _lowercaseLabel?: string }>();
+    const newEdgesMap = new Map<string, Edge>();
 
     devices.forEach((device) => {
-      this._nodes.push({
+      const label = this._buildLabel(device);
+      newNodesMap.set(device.ieee, {
         id: device.ieee,
-        label: this._buildLabel(device),
+        label: label,
         shape: this._getShape(device),
         mass: this._getMass(device),
         color: {
           background: device.available ? "#66FF99" : "#FF9999",
         },
+        _lowercaseLabel: label.toLowerCase(),
       });
+
       if (device.neighbors && device.neighbors.length > 0) {
         device.neighbors.forEach((neighbor) => {
-          const idx = edges.findIndex(
-            (e) => device.ieee === e.to && neighbor.ieee === e.from
-          );
-          if (idx === -1) {
-            edges.push({
-              from: device.ieee,
-              to: neighbor.ieee,
-              label: neighbor.lqi + "",
-              color: this._getLQI(parseInt(neighbor.lqi)).color,
-              width: this._getLQI(parseInt(neighbor.lqi)).width,
-              length: 2000 - 4 * parseInt(neighbor.lqi),
-              arrows: {
-                from: {
-                  enabled: neighbor.relationship !== "Child",
-                },
-              },
-              dashes: neighbor.relationship !== "Child",
-            });
-          } else {
-            edges[idx].color = this._getLQI(
-              (parseInt(edges[idx].label!) + parseInt(neighbor.lqi)) / 2
-            ).color;
-            edges[idx].width = this._getLQI(
-              (parseInt(edges[idx].label!) + parseInt(neighbor.lqi)) / 2
-            ).width;
-            edges[idx].length =
-              2000 -
-              6 * ((parseInt(edges[idx].label!) + parseInt(neighbor.lqi)) / 2);
-            edges[idx].label += "/" + neighbor.lqi;
-            delete edges[idx].arrows;
-            delete edges[idx].dashes;
+          if (neighbor.relationship === "NoneOfTheAbove") {
+            return;
           }
+          // Consistent edge key using sorted IEEE addresses to avoid duplication
+          const sortedIeee = [device.ieee, neighbor.ieee].sort();
+          const edgeKey = `${sortedIeee[0]}-${sortedIeee[1]}`;
+
+          newEdgesMap.set(edgeKey, {
+            from:
+              neighbor.relationship !== "Parent" ? device.ieee : neighbor.ieee,
+            to:
+              neighbor.relationship === "Parent" ? device.ieee : neighbor.ieee,
+            label: neighbor.lqi.toString(),
+            color: this._getLQI(parseInt(neighbor.lqi)).color,
+            width: this._getLQI(parseInt(neighbor.lqi)).width,
+            length: 2000 - 4 * parseInt(neighbor.lqi),
+            arrows: {
+              from: {
+                enabled:
+                  neighbor.relationship === "Child" ||
+                  neighbor.relationship === "Parent",
+              },
+            },
+            dashes: neighbor.relationship === "Sibling",
+          });
         });
       }
     });
 
-    this._network?.setData({ nodes: this._nodes, edges: edges });
+    // Incrementally update nodes
+    const existingNodeIds = new Set(this._nodes.getIds() as string[]);
+    const newNodeIds = new Set(newNodesMap.keys());
+
+    // Nodes to remove
+    const nodesToRemove = [...existingNodeIds].filter(
+      (id) => !newNodeIds.has(id)
+    );
+
+    if (nodesToRemove.length > 0) {
+      this._nodes.remove(nodesToRemove);
+    }
+
+    // Nodes to add or update
+    const nodesToAddOrUpdate: (Node & { _lowercaseLabel?: string })[] = [];
+    newNodesMap.forEach((node, id) => {
+      const existingNode = this._nodes.get(id);
+      if (
+        !existingNode ||
+        (existingNode as any)._lowercaseLabel !== node._lowercaseLabel ||
+        existingNode.label !== node.label ||
+        existingNode.color !== node.color ||
+        existingNode.shape !== node.shape ||
+        existingNode.mass !== node.mass
+      ) {
+        nodesToAddOrUpdate.push(node);
+      }
+    });
+    if (nodesToAddOrUpdate.length > 0) {
+      this._nodes.update(nodesToAddOrUpdate);
+    }
+
+    // Incrementally update edges
+    const existingEdgeKeys = new Set(this._edges.getIds() as string[]);
+    const newEdgeKeys = new Set(newEdgesMap.keys());
+
+    // Edges to remove
+    const edgesToRemove = [...existingEdgeKeys].filter(
+      (id) => !newEdgeKeys.has(id)
+    );
+
+    if (edgesToRemove.length > 0) {
+      this._edges.remove(edgesToRemove);
+    }
+
+    // Edges to add or update
+    const edgesToAddOrUpdate: Edge[] = [];
+    newEdgesMap.forEach((edge, key) => {
+      const existingEdge = this._edges.get(key);
+      if (
+        !existingEdge ||
+        existingEdge.label !== edge.label ||
+        existingEdge.color !== edge.color ||
+        existingEdge.width !== edge.width ||
+        existingEdge.length !== edge.length ||
+        JSON.stringify(existingEdge.arrows) !== JSON.stringify(edge.arrows) ||
+        existingEdge.dashes !== edge.dashes
+      ) {
+        edgesToAddOrUpdate.push(edge);
+      }
+    });
+    if (edgesToAddOrUpdate.length > 0) {
+      this._edges.update(edgesToAddOrUpdate);
+    }
+    this._network!.fit();
   }
 
   private _getLQI(lqi: number): EdgeOptions {
@@ -341,15 +404,22 @@ export class ZHANetworkVisualizationPage extends LitElement {
   }
 
   private _handleSearchChange(ev: CustomEvent) {
-    this._filter = ev.detail.value;
-    const filterText = this._filter!.toLowerCase();
-    if (!this._network) {
-      return;
-    }
+    this._filter = ev.detail.value.toLowerCase();
+    clearTimeout(this._searchDebounceTimeout);
+    this._searchDebounceTimeout = window.setTimeout(() => {
+      this._applyFilter();
+    }, 300);
+  }
+
+  private _applyFilter() {
+    if (!this._network) return;
     if (this._filter) {
       const filteredNodeIds: (string | number)[] = [];
       this._nodes.forEach((node) => {
-        if (node.label && node.label.toLowerCase().includes(filterText)) {
+        if (
+          node._lowercaseLabel &&
+          node._lowercaseLabel.includes(this._filter!)
+        ) {
           filteredNodeIds.push(node.id!);
         }
       });
@@ -416,24 +486,6 @@ export class ZHANetworkVisualizationPage extends LitElement {
     this._autoZoom = (ev.target as HaCheckbox).checked;
   }
 
-  private _handlePhysicsCheckboxChange(ev: Event) {
-    this._enablePhysics = (ev.target as HaCheckbox).checked;
-
-    this._network!.setOptions(
-      this._enablePhysics
-        ? {
-            physics: {
-              barnesHut: {
-                springConstant: 0,
-                avoidOverlap: 10,
-                damping: 0.09,
-              },
-            },
-          }
-        : { physics: false }
-    );
-  }
-
   static get styles(): CSSResultGroup {
     return [
       css`
@@ -454,7 +506,7 @@ export class ZHANetworkVisualizationPage extends LitElement {
         :host([narrow]) .header {
           flex-direction: column;
           align-items: stretch;
-          height: var(--header-height) * 2;
+          height: calc(var(--header-height) * 2);
         }
 
         .search-toolbar {
