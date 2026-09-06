@@ -13,7 +13,7 @@ export interface ZHADeviceRemovedEvent {
 
 export interface ChangeEvent {
   detail?: {
-    value?: any;
+    value?: unknown;
   };
   target?: EventTarget;
 }
@@ -23,8 +23,8 @@ export interface SetAttributeServiceData {
   endpoint_id: number;
   cluster_id: number;
   cluster_type: string;
-  attribute: number;
-  value: any;
+  attribute: string | number;
+  value: unknown;
   manufacturer?: number;
 }
 
@@ -35,7 +35,7 @@ export interface IssueCommandServiceData {
   cluster_type: string;
   command: number;
   command_type: string;
-  params?: any;
+  params: Record<string, unknown>;
 }
 
 export interface ZHADeviceSelectedParams {

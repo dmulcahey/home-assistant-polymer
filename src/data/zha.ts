@@ -65,8 +65,20 @@ export interface ZHADeviceEndpoint {
 }
 
 export interface Attribute {
-  name: string;
+  schema: HaFormSchema[];
+  fixed_length?: number;
+  zcl_attribute: ZCLAttributeDef;
+}
+
+export interface ZCLAttributeDef {
   id: number;
+  name: string;
+  type: string | null;
+  zcl_type: number | string | null;
+  access: number | string | null;
+  mandatory: boolean;
+  is_manufacturer_specific: boolean | null;
+  manufacturer_code: number | null;
 }
 
 export interface Cluster {
@@ -123,10 +135,16 @@ export type ClusterConfigurationEvent =
   | ClusterConfigurationEventFinish;
 
 export interface Command {
-  name: string;
-  id: number;
-  type: string;
   schema: HaFormSchema[];
+  zcl_command: ZCLCommandDef;
+}
+
+export interface ZCLCommandDef {
+  id: number;
+  name: string;
+  command_type: string;
+  is_manufacturer_specific?: boolean | null;
+  manufacturer_code?: number | null;
 }
 
 export interface ReadAttributeServiceData {
@@ -134,7 +152,7 @@ export interface ReadAttributeServiceData {
   endpoint_id: number;
   cluster_id: number;
   cluster_type: string;
-  attribute: number;
+  attribute: string | number;
   manufacturer?: number;
 }
 
@@ -316,7 +334,9 @@ export const unbindDeviceFromGroup = (
 export const readAttributeValue = (
   hass: HomeAssistant,
   data: ReadAttributeServiceData
-): Promise<string> =>
+): Promise<
+  boolean | number | string | Record<string, unknown> | unknown[] | null
+> =>
   hass.callWS({
     ...data,
     type: "zha/devices/clusters/attributes/value",

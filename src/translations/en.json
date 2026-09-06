@@ -7822,14 +7822,21 @@
             "introduction": "View and edit cluster attributes.",
             "attributes_of_cluster": "Attributes of the selected cluster",
             "read_zigbee_attribute": "Read attribute",
-            "write_zigbee_attribute": "Write attribute"
+            "write_zigbee_attribute": "Write attribute",
+            "read_only_attribute_hint": "This attribute is read-only and cannot be written.",
+            "fixed_length_error": "{count, plural, one {Enter exactly # item} other {Enter exactly # items}}",
+            "attribute_label": "{name} (ID: {id})",
+            "manufacturer_attribute_label": "{name} (Manufacturer: {manufacturer}, ID: {id})",
+            "load_failed": "Failed to load attributes"
           },
           "cluster_commands": {
             "header": "Cluster commands",
             "introduction": "View and issue cluster commands.",
             "commands_of_cluster": "Commands of the selected cluster",
             "issue_zigbee_command": "Issue Zigbee command",
-            "help_command_dropdown": "Select a command to interact with."
+            "help_command_dropdown": "Select a command to interact with.",
+            "command_label": "{name} ({type}, ID: {id})",
+            "load_failed": "Failed to load commands"
           },
           "device_pairing_card": {
             "PAIRED": "Device found",
