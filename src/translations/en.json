@@ -7711,7 +7711,6 @@
         "zha": {
           "common": {
             "clusters": "Clusters",
-            "manufacturer_code_override": "Manufacturer code override",
             "value": "Value"
           },
           "configuration_page": {

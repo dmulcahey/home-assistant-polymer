@@ -177,9 +177,6 @@ export class ZHAClusterCommands extends LitElement {
   }
 
   private _selectedCommandChanged(event: HaSelectSelectEvent): void {
-    if (this._selectedCommandKey === event.detail.value) {
-      return;
-    }
     this._selectedCommandKey = event.detail.value;
     this._commandData = {};
   }
