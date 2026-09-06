@@ -1,5 +1,8 @@
 import type { HaSelect } from "../../../../../components/ha-select";
-import type { ZHADevice } from "../../../../../data/zha";
+import type {
+  ReadAttributeServiceData,
+  ZHADevice,
+} from "../../../../../data/zha";
 
 export interface ItemSelectedEvent {
   target?: HaSelect;
@@ -13,19 +16,13 @@ export interface ZHADeviceRemovedEvent {
 
 export interface ChangeEvent {
   detail?: {
-    value?: unknown;
+    value?: any;
   };
   target?: EventTarget;
 }
 
-export interface SetAttributeServiceData {
-  ieee: string;
-  endpoint_id: number;
-  cluster_id: number;
-  cluster_type: string;
-  attribute: string | number;
+export interface SetAttributeServiceData extends ReadAttributeServiceData {
   value: unknown;
-  manufacturer?: number;
 }
 
 export interface IssueCommandServiceData {
@@ -35,7 +32,7 @@ export interface IssueCommandServiceData {
   cluster_type: string;
   command: number;
   command_type: string;
-  params: Record<string, unknown>;
+  params?: Record<string, unknown>;
 }
 
 export interface ZHADeviceSelectedParams {

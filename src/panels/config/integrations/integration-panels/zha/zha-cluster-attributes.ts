@@ -5,12 +5,10 @@ import type { HASSDomCurrentTargetEvent } from "../../../../../common/dom/fire_e
 import "../../../../../components/buttons/ha-call-service-button";
 import "../../../../../components/buttons/ha-progress-button";
 import type { HaProgressButton } from "../../../../../components/buttons/ha-progress-button";
-import "../../../../../components/ha-alert";
 import "../../../../../components/ha-form/ha-form";
 import type { HaFormSchema } from "../../../../../components/ha-form/types";
 import "../../../../../components/ha-select";
 import type { HaSelectSelectEvent } from "../../../../../components/ha-select";
-import "../../../../../components/ha-spinner";
 import { forwardHaptic } from "../../../../../data/haptics";
 import type {
   Attribute,
@@ -29,7 +27,7 @@ import type { SetAttributeServiceData } from "./types";
 
 @customElement("zha-cluster-attributes")
 export class ZHAClusterAttributes extends LitElement {
-  @property({ attribute: false }) public hass!: HomeAssistant;
+  @property({ attribute: false }) public hass?: HomeAssistant;
 
   @property({ attribute: false }) public device?: ZHADevice;
 
@@ -44,45 +42,26 @@ export class ZHAClusterAttributes extends LitElement {
 
   @state() private _readingAttribute = false;
 
-  private _readRequestId = 0;
-
-  @state() private _loadError = false;
-
-  private _loadRequestId = 0;
-
-  protected willUpdate(changedProperties: PropertyValues<this>): void {
-    super.willUpdate(changedProperties);
-    const deviceChanged =
-      changedProperties.has("device") &&
-      this.device?.ieee !== changedProperties.get("device")?.ieee;
-    if (changedProperties.has("selectedCluster") || deviceChanged) {
-      this._readRequestId++;
-      this._readingAttribute = false;
+  protected updated(changedProperties: PropertyValues<this>): void {
+    if (changedProperties.has("selectedCluster")) {
       this._attributes = undefined;
       this._selectedAttributeKey = undefined;
       this._attributeFormData = {};
-      this._loadError = false;
       this._fetchAttributesForCluster();
     }
+    super.updated(changedProperties);
   }
 
   protected render() {
-    if (!this.hass || !this.device || !this.selectedCluster) {
+    if (!this.device || !this.selectedCluster || !this._attributes) {
       return nothing;
     }
-    if (this._loadError) {
-      return html`<ha-alert alert-type="error">
-        ${this.hass.localize("ui.panel.config.zha.cluster_attributes.load_failed")}
-      </ha-alert>`;
-    }
-    if (!this._attributes) {
-      return html`<ha-spinner></ha-spinner>`;
-    }
+    const selectedAttribute = this._selectedAttribute;
     return html`
       <div class="content">
         <div class="attribute-picker">
           <ha-select
-            .label=${this.hass.localize(
+            .label=${this.hass!.localize(
               "ui.panel.config.zha.cluster_attributes.attributes_of_cluster"
             )}
             class="menu"
@@ -96,8 +75,8 @@ export class ZHAClusterAttributes extends LitElement {
           </ha-select>
         </div>
         ${
-          this._selectedAttributeKey !== undefined
-            ? this._renderAttributeInteractions()
+          selectedAttribute
+            ? this._renderAttributeInteractions(selectedAttribute)
             : nothing
         }
       </div>
@@ -114,7 +93,7 @@ export class ZHAClusterAttributes extends LitElement {
 
   private _formatAttributeLabel(attribute: Attribute): string {
     const { name, id, manufacturer_code } = attribute.zcl_attribute;
-    return this.hass.localize(
+    return this.hass!.localize(
       manufacturer_code == null
         ? "ui.panel.config.zha.cluster_attributes.attribute_label"
         : "ui.panel.config.zha.cluster_attributes.manufacturer_attribute_label",
@@ -133,60 +112,32 @@ export class ZHAClusterAttributes extends LitElement {
     );
   }
 
-  private get _selectedAttributeIsWritable(): boolean {
-    const access = this._selectedAttribute?.zcl_attribute.access;
-    if (access == null || !Number.isFinite(Number(access))) {
-      return true;
-    }
+  private _renderAttributeInteractions(attribute: Attribute): TemplateResult {
+    const access = attribute.zcl_attribute.access;
     // ZCL write (0x02) and optional write (0x04) access flags.
     // eslint-disable-next-line no-bitwise
-    return (Number(access) & 0x06) !== 0;
-  }
-
-  private get _attributeValueValidationError(): string | undefined {
-    if (this._attributeFormData.value === undefined) {
-      return undefined;
-    }
-    return this._computeAttributeValueValidationError(
-      this._attributeFormData.value
-    );
-  }
-
-  private get _setAttributeServiceData(): SetAttributeServiceData | undefined {
-    const data = this._computeReadAttributeServiceData();
-    if (
-      !data ||
-      this._attributeFormData.value === undefined ||
-      this._attributeFormData.value === null ||
-      !this._selectedAttributeIsWritable ||
-      this._attributeValueValidationError
-    ) {
-      return undefined;
-    }
-    return { ...data, value: this._attributeFormData.value };
-  }
-
-  private _renderAttributeInteractions(): TemplateResult {
-    const setAttributeServiceData = this._setAttributeServiceData;
-    const readAttributeServiceData = this._computeReadAttributeServiceData();
-    const validationError = this._attributeValueValidationError;
+    const writable = access === null || (access & 0x06) !== 0;
+    const validationError =
+      this._computeAttributeValueValidationError(attribute);
+    const canWrite =
+      writable && this._attributeFormData.value != null && !validationError;
 
     return html`
       <div class="attribute-form">
         <ha-form
           .hass=${this.hass}
-          .disabled=${!this._selectedAttributeIsWritable}
-          .schema=${this._selectedAttribute?.schema ?? []}
+          .disabled=${!writable}
+          .schema=${attribute.schema}
           @value-changed=${this._attributeFormDataChanged}
           .data=${this._attributeFormData}
           .computeLabel=${this._computeLabel}
           .error=${validationError ? { value: validationError } : undefined}
         ></ha-form>
         ${
-          !this._selectedAttributeIsWritable
+          !writable
             ? html`
                 <div class="attribute-hint">
-                  ${this.hass.localize(
+                  ${this.hass!.localize(
                     "ui.panel.config.zha.cluster_attributes.read_only_attribute_hint"
                   )}
                 </div>
@@ -198,19 +149,19 @@ export class ZHAClusterAttributes extends LitElement {
         <ha-call-service-button
           domain="zha"
           service="set_zigbee_cluster_attribute"
-          .data=${setAttributeServiceData ?? {}}
-          .disabled=${!setAttributeServiceData}
+          .data=${this._computeSetAttributeServiceData(attribute) ?? {}}
+          .disabled=${!canWrite}
         >
-          ${this.hass.localize(
+          ${this.hass!.localize(
             "ui.panel.config.zha.cluster_attributes.write_zigbee_attribute"
           )}
         </ha-call-service-button>
         <ha-progress-button
           @click=${this._onGetZigbeeAttributeClick}
           .progress=${this._readingAttribute}
-          .disabled=${this._readingAttribute || !readAttributeServiceData}
+          .disabled=${this._readingAttribute}
         >
-          ${this.hass.localize(
+          ${this.hass!.localize(
             "ui.panel.config.zha.cluster_attributes.read_zigbee_attribute"
           )}
         </ha-progress-button>
@@ -219,75 +170,48 @@ export class ZHAClusterAttributes extends LitElement {
   }
 
   private async _fetchAttributesForCluster(): Promise<void> {
-    const requestId = ++this._loadRequestId;
-    const device = this.device;
-    const selectedCluster = this.selectedCluster;
-    const hass = this.hass;
-    if (!device || !selectedCluster || !hass) {
-      return;
-    }
-
-    try {
-      const attributes = await fetchAttributesForCluster(
-        hass,
-        device.ieee,
-        selectedCluster.endpoint_id,
-        selectedCluster.id,
-        selectedCluster.type
+    if (this.device && this.selectedCluster && this.hass) {
+      this._attributes = await fetchAttributesForCluster(
+        this.hass,
+        this.device.ieee,
+        this.selectedCluster.endpoint_id,
+        this.selectedCluster.id,
+        this.selectedCluster.type
       );
-      if (
-        requestId !== this._loadRequestId ||
-        this.selectedCluster !== selectedCluster ||
-        this.device?.ieee !== device.ieee
-      ) {
-        return;
-      }
-      attributes.sort((a, b) => {
-        const nameComparison = a.zcl_attribute.name.localeCompare(
-          b.zcl_attribute.name
-        );
-        if (nameComparison !== 0) {
-          return nameComparison;
-        }
-        return (
+      this._attributes.sort(
+        (a, b) =>
+          a.zcl_attribute.name.localeCompare(b.zcl_attribute.name) ||
           (a.zcl_attribute.manufacturer_code ?? -1) -
-          (b.zcl_attribute.manufacturer_code ?? -1)
-        );
-      });
-      this._attributes = attributes;
-      if (attributes.length > 0) {
+            (b.zcl_attribute.manufacturer_code ?? -1)
+      );
+      if (this._attributes.length > 0) {
         this._selectedAttributeKey = this._attributeKey(this._attributes[0]);
-        this._attributeFormData = {};
-      }
-    } catch (_err) {
-      if (
-        requestId === this._loadRequestId &&
-        this.selectedCluster === selectedCluster &&
-        this.device?.ieee === device.ieee
-      ) {
-        this._loadError = true;
       }
     }
   }
 
-  private _computeReadAttributeServiceData():
-    ReadAttributeServiceData | undefined {
-    const cluster = this.selectedCluster;
-    const device = this.device;
-    const selectedAttribute = this._selectedAttribute;
-    if (!cluster || !device || !selectedAttribute) {
+  private _computeReadAttributeServiceData(
+    attribute: Attribute
+  ): ReadAttributeServiceData | undefined {
+    if (!this.selectedCluster || !this.device) {
       return undefined;
     }
 
     return {
-      ieee: device.ieee,
-      endpoint_id: cluster.endpoint_id,
-      cluster_id: cluster.id,
-      cluster_type: cluster.type,
-      attribute: selectedAttribute.zcl_attribute.name,
-      manufacturer:
-        selectedAttribute.zcl_attribute.manufacturer_code ?? undefined,
+      ieee: this.device.ieee,
+      endpoint_id: this.selectedCluster.endpoint_id,
+      cluster_id: this.selectedCluster.id,
+      cluster_type: this.selectedCluster.type,
+      attribute: attribute.zcl_attribute.name,
+      manufacturer: attribute.zcl_attribute.manufacturer_code ?? undefined,
     };
+  }
+
+  private _computeSetAttributeServiceData(
+    attribute: Attribute
+  ): SetAttributeServiceData | undefined {
+    const data = this._computeReadAttributeServiceData(attribute);
+    return data ? { ...data, value: this._attributeFormData.value } : undefined;
   }
 
   private _attributeFormDataChanged(
@@ -298,20 +222,22 @@ export class ZHAClusterAttributes extends LitElement {
 
   private _computeLabel = (schema: HaFormSchema): string =>
     schema.name === "value"
-      ? this.hass.localize("ui.panel.config.zha.common.value")
+      ? this.hass!.localize("ui.panel.config.zha.common.value")
       : schema.name;
 
   private _computeAttributeValueValidationError(
-    value: unknown
+    attribute: Attribute
   ): string | undefined {
-    const fixedLength = this._selectedAttribute?.fixed_length;
+    const fixedLength = attribute.fixed_length;
+    const value = this._attributeFormData.value;
     if (
+      value === undefined ||
       fixedLength === undefined ||
       (Array.isArray(value) && value.length === fixedLength)
     ) {
       return undefined;
     }
-    return this.hass.localize(
+    return this.hass!.localize(
       "ui.panel.config.zha.cluster_attributes.fixed_length_error",
       { count: fixedLength }
     );
@@ -320,35 +246,23 @@ export class ZHAClusterAttributes extends LitElement {
   private async _onGetZigbeeAttributeClick(
     ev: HASSDomCurrentTargetEvent<HaProgressButton>
   ): Promise<void> {
-    const data = this._computeReadAttributeServiceData();
-    if (!data || this._readingAttribute) {
+    const attribute = this._selectedAttribute;
+    const data = attribute && this._computeReadAttributeServiceData(attribute);
+    if (!data || !this.hass || this._readingAttribute) {
       return;
     }
     const button = ev.currentTarget;
-    const requestId = ++this._readRequestId;
-    const cluster = this.selectedCluster;
     this._readingAttribute = true;
     try {
       const value = await readAttributeValue(this.hass, data);
-      if (
-        requestId !== this._readRequestId ||
-        this.selectedCluster !== cluster ||
-        this.device?.ieee !== data.ieee
-      ) {
-        return;
-      }
       this._attributeFormData = value !== null ? { value } : {};
       forwardHaptic(this, "success");
       button.actionSuccess();
     } catch (_err) {
-      if (requestId === this._readRequestId) {
-        forwardHaptic(this, "failure");
-        button.actionError();
-      }
+      forwardHaptic(this, "failure");
+      button.actionError();
     } finally {
-      if (requestId === this._readRequestId) {
-        this._readingAttribute = false;
-      }
+      this._readingAttribute = false;
     }
   }
 
@@ -356,8 +270,6 @@ export class ZHAClusterAttributes extends LitElement {
     if (this._selectedAttributeKey === event.detail.value) {
       return;
     }
-    this._readRequestId++;
-    this._readingAttribute = false;
     this._selectedAttributeKey = event.detail.value;
     this._attributeFormData = {};
   }
@@ -368,11 +280,6 @@ export class ZHAClusterAttributes extends LitElement {
       css`
         :host {
           display: block;
-        }
-
-        ha-spinner {
-          display: block;
-          margin: var(--ha-space-4) auto;
         }
 
         .content {
@@ -390,7 +297,7 @@ export class ZHAClusterAttributes extends LitElement {
         .attribute-picker,
         .attribute-form {
           padding-inline: var(--ha-space-7);
-          padding-bottom: var(--ha-space-3);
+          padding-bottom: 10px;
         }
 
         .attribute-hint {

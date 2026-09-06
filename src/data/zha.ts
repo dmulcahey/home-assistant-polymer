@@ -74,8 +74,8 @@ export interface ZCLAttributeDef {
   id: number;
   name: string;
   type: string | null;
-  zcl_type: number | string | null;
-  access: number | string | null;
+  zcl_type: number | null;
+  access: number | null;
   mandatory: boolean;
   is_manufacturer_specific: boolean | null;
   manufacturer_code: number | null;
@@ -143,8 +143,8 @@ export interface ZCLCommandDef {
   id: number;
   name: string;
   command_type: string;
-  is_manufacturer_specific?: boolean | null;
-  manufacturer_code?: number | null;
+  is_manufacturer_specific: boolean | null;
+  manufacturer_code: number | null;
 }
 
 export interface ReadAttributeServiceData {
